@@ -22,9 +22,9 @@ cp .env.example .env
 
 | Key | Required for | Get one |
 |-----|--------------|---------|
-| `OPENAI_API_KEY` | Modules 1-4 (default model) | <https://platform.openai.com> |
-| `LANGSMITH_API_KEY` | Modules 3 & 4 (recommended for all) | <https://smith.langchain.com> |
-| `LANGSMITH_API_KEY_GATEWAY` / `WORKSPACE_ID` | Module 3 §1 (LangSmith Gateway policies) | same key as `LANGSMITH_API_KEY`; workspace ID from LangSmith Settings → Workspace |
+| `OPENAI_API_KEY` | Modules 1-3 (default model) | <https://platform.openai.com> |
+| `LANGSMITH_API_KEY` | Modules 2 & 3 (recommended for all) | <https://smith.langchain.com> |
+| `LANGSMITH_API_KEY_GATEWAY` / `WORKSPACE_ID` | Module 2 §1 (LangSmith Gateway policies) | same key as `LANGSMITH_API_KEY`; workspace ID from LangSmith Settings → Workspace |
 | `TAVILY_API_KEY` | Modules 1 & 3 (web search tool) | <https://tavily.com> |
 
 ```bash
@@ -56,21 +56,17 @@ model = init_chat_model("openai:gpt-5.6-terra", use_responses_api=True)
 # model = ChatBedrockConverse(provider="anthropic", model_id="...")
 ```
 
-`utils/models.py` also ships a commented-out **LangSmith Gateway** block. Module 3 §1.4 walks through flipping the default to it so every model call (notebooks *and* the deployed agent) is routed through the gateway and subject to workspace policies.
+`utils/models.py` also ships a commented-out **LangSmith Gateway** block, for routing every notebook's model calls through the gateway too. Module 2 §1.4 walks through the same technique for the deployable agent itself.
 
-## Deploy + Govern (Module 3)
+## Deploy + Govern (Module 2)
 
-Module 3 first creates a workspace-level **LangSmith Gateway** policy (PII / secrets redaction), routes the model through the gateway, then deploys the agent at `agents/deep_agent/` to LangSmith via the `langgraph` CLI (installed by `uv sync`). The deploy config is `langgraph.json` at the workshop root.
+Module 2 first creates a workspace-level **LangSmith Gateway** policy (PII / secrets redaction), routes a demo agent through the gateway, then deploys the agent at `agents/deep_agent/` with [Managed Deep Agents](https://docs.langchain.com/langsmith/python/managed-deep-agents-overview) (MDA) via the `mda` CLI — the same Deep Agents harness from Module 1, packaged as a `define_deep_agent` project instead of a hand-built `create_deep_agent` + server.
 
-Because `agents/deep_agent/agent.py` imports `model` from `utils.models`, whichever block is active in `utils/models.py` at deploy time is what ships — flip on the gateway block and the deployed agent inherits it with no extra flags.
+`agents/deep_agent/` is its own self-contained project (own `pyproject.toml`, own `.env`), so the `mda` toolchain stays isolated from this workshop's notebook environment. Its model config lives directly in `agents/deep_agent/agent.py` — flip on the commented-out Gateway block there and the deployed agent routes through the policy from §1.1, no extra deploy flags needed.
 
-Your `LANGSMITH_API_KEY` must have deployment permissions (use a `lsv2_sk_...` service key). The gateway block reads `LANGSMITH_API_KEY_GATEWAY` (the same key under a non-reserved name, since `langgraph deploy` strips `LANGSMITH_API_KEY` during upload).
+Your `LANGSMITH_API_KEY` must have deployment permissions (use a `lsv2_sk_...` service key). The Gateway block reads `LANGSMITH_API_KEY_GATEWAY` (the same key under a non-reserved name, since `LANGSMITH_API_KEY` is reserved for the deployment's own auth).
 
-## Engine (Module 5)
-
-Module 5 introduces **LangSmith Engine** — it reads your deployed agent's production traces, clusters recurring failures into issues, diagnoses the root cause against your connected source code, and proposes fixes as GitHub PRs. It runs on the Module 3 deployment, driven through an *assistant* (a saved graph configuration) that swaps in a deliberately broken search tool so Engine has a clear, reproducible issue to find.
-
-Engine's first analysis takes ~20 minutes, so it's best primed before a session. Needs the Module 3 deployment and a `LANGSMITH_API_KEY`.
+Wherever your LangSmith workspace isn't on the GCP US SaaS region (the default for `mda deploy`), set `LANGSMITH_ENDPOINT` to match it in `agents/deep_agent/.env` before your first deploy — see the comment in that file's `.env.example`.
 
 ## Project Structure
 
@@ -79,26 +75,27 @@ modular-workshops/
 ├── README.md                       (this file — recipes + setup)
 ├── pyproject.toml                  (shared dependencies)
 ├── .env.example
-├── langgraph.json                  (registers agents/deep_agent for langgraph dev)
 ├── utils/
 ├── agents/
-│   ├── research_agent.py           (shared agent factory — Module 1 references, Module 4 imports for eval)
-│   └── deep_agent/                 (deployable + governed agent for Module 3)
+│   ├── research_agent.py           (shared agent factory — Module 1 references, Module 3 imports for eval)
+│   └── deep_agent/                 (deployable + governed agent for Module 2 — its own project, `mda deploy`)
 │       ├── agent.py
-│       ├── AGENTS.md
+│       ├── instructions.md
+│       ├── memory.py
+│       ├── tools/search.py
 │       └── skills/
 │           ├── linkedin-post/SKILL.md
 │           └── twitter-post/SKILL.md
 ├── images/                         (diagrams used by the notebooks)
 └── modules/
     ├── 01_deep_agents.ipynb        (Module 1)
-    ├── 03_deploy_and_govern.ipynb  (Module 3)
-    └── 04_langsmith.ipynb          (Module 4)
+    ├── 02_deploy_and_govern.ipynb  (Module 2)
+    └── 03_langsmith.ipynb          (Module 3)
 ```
 
 ## Common Issues
 
-**`langgraph deploy` fails with 403 / permission denied**
+**`mda deploy` fails with 403 / permission denied**
 Your API key is a personal token. Generate a service key (`lsv2_sk_...`) in LangSmith settings.
 
 **Notebook can't find `utils` / `agents`**

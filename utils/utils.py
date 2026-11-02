@@ -1,4 +1,6 @@
-"""Shared helpers used by Module 1 (Chinook demo) and others."""
+"""Shared helpers. `clear_local_env_vars` is used by Module 2. `show_graph` and
+`get_engine_for_chinook_db` supported the LangGraph module, which has been
+removed from this workshop, and are now unused."""
 
 import os
 import sqlite3

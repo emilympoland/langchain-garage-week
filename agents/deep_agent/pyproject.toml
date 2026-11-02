@@ -1,0 +1,12 @@
+[project]
+name = "deep-agent"
+version = "0.1.0"
+description = "Module 2's deployable research agent, built with Managed Deep Agents (MDA)."
+requires-python = ">=3.11"
+dependencies = [
+    # Pin this to the exact version `mda --version` reports before a real
+    # deploy. >=0.8.0 is the minimum for the layer-based `define_memory` API
+    # that memory.py uses.
+    "managed-deepagents>=0.8.0",
+    "tavily-python>=0.7.25",
+]

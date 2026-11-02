@@ -3,10 +3,6 @@
 The notebooks all import `model` from here, so swapping providers only requires
 editing this file. Pick exactly one `MODEL_SPEC` / `API_KEY_ENV` pair below;
 `model` is built from whichever is uncommented.
-
-`MODEL_SPEC` is data rather than a constructed client because Module 4's Harbor
-section runs its agent in a container that can't import this file — it passes the
-spec through Harbor's own config channel instead of duplicating the values.
 """
 
 import os
@@ -19,9 +15,11 @@ from langchain.chat_models import init_chat_model
 MODEL_SPEC = {"model": "openai:gpt-5.6-luna", "use_responses_api": True}
 API_KEY_ENV = "OPENAI_API_KEY"
 
-# --- OpenAI via the LangSmith LLM Gateway (Module 3 §1.4) ---
-# Routes every model call through the Gateway so workspace policies
-# (PII / secrets / allow-lists / cost caps) are enforced.
+# --- OpenAI via the LangSmith LLM Gateway ---
+# Same technique Module 2 §1.4 wires up for the deployable agent in
+# `agents/deep_agent/agent.py` -- applied here, it routes every notebook's
+# model calls through the Gateway too, so workspace policies (PII / secrets /
+# allow-lists / cost caps) are enforced on local runs as well.
 # MODEL_SPEC = {
 #     "model": "openai:gpt-5.6-luna",
 #     "base_url": "https://gateway.smith.langchain.com/openai",

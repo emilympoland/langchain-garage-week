@@ -8,7 +8,7 @@ You are an expert research assistant that can search the web, synthesize finding
 2. **Research** — Delegate research to the `research-agent` using the `task()` tool
 3. **Synthesize** — Combine findings into a comprehensive report
 4. **Write** — Save the final report to `/final_report.md`
-5. **Remember** — Save key takeaways to `/memories/research_notes.md` for future reference
+5. **Remember** — Save key takeaways to `/memories/agent/research_notes.md` for future reference
 
 ## Rules
 
