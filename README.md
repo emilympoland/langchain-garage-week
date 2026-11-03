@@ -36,27 +36,30 @@ Open whichever module(s) your recipe calls for.
 
 ## Switching Models
 
-All modules import `model` from `utils/models.py`. Change one line there to swap providers — no notebook edits required.
+Module 1 and Module 3 import `model` from `utils/models.py` (Module 2's deployable agent has its own separate config — see below). Pick exactly one `MODEL_SPEC` / `API_KEY_ENV` pair there to swap providers — no notebook edits required.
 
 ```python
 # utils/models.py
 
-# OpenAI (default)
-model = init_chat_model("openai:gpt-5.6-terra", use_responses_api=True)
+# OpenAI, direct (default)
+MODEL_SPEC = {"model": "openai:gpt-5.6-luna", "use_responses_api": True}
+API_KEY_ENV = "OPENAI_API_KEY"
 
 # Anthropic
-# model = init_chat_model("anthropic:claude-sonnet-4-5")
+# MODEL_SPEC = {"model": "anthropic:claude-sonnet-5"}
+# API_KEY_ENV = "ANTHROPIC_API_KEY"
 
 # Azure OpenAI
-# from langchain_openai import AzureChatOpenAI
-# model = AzureChatOpenAI(azure_deployment="gpt-5.6-terra", streaming=True)
+# MODEL_SPEC = {"model": "azure_openai:gpt-5.6-terra", "azure_deployment": "gpt-5.6-terra"}
+# API_KEY_ENV = "AZURE_OPENAI_API_KEY"
 
-# AWS Bedrock
-# from langchain_aws import ChatBedrockConverse
-# model = ChatBedrockConverse(provider="anthropic", model_id="...")
+# AWS Bedrock -- authenticates via the AWS credential chain, not a single key.
+# Also swap the final `model = ...` line for `model = init_chat_model(**MODEL_SPEC)`.
+# MODEL_SPEC = {"model": "bedrock_converse:anthropic.claude-sonnet-4-20250514-v1:0"}
+# API_KEY_ENV = None
 ```
 
-`utils/models.py` also ships a commented-out **LangSmith Gateway** block, for routing every notebook's model calls through the gateway too. Module 2 §1.4 walks through the same technique for the deployable agent itself.
+`utils/models.py` also ships a commented-out **LangSmith Gateway** block, for routing Module 1 and Module 3's model calls through the gateway too. Module 2 §1.4 walks through the same technique for the deployable agent itself, which has its own model config in `agents/deep_agent/agent.py`.
 
 ## Deploy + Govern (Module 2)
 
@@ -97,6 +100,21 @@ modular-workshops/
 
 **`mda deploy` fails with 403 / permission denied**
 Your API key is a personal token. Generate a service key (`lsv2_sk_...`) in LangSmith settings.
+
+**LangSmith could not identify the API key owner, or 403 on `mda` commands**
+The key in `agents/deep_agent/.env` is wrong or revoked, or it isn't a personal key — `mda` reads `.env` first, so check it there. If you've also exported an old `LANGSMITH_API_KEY` in your shell, other tools may still pick that one up instead.
+
+**Deploy fails with 401/403 even with a valid key**
+Your LangSmith workspace needs access to deployments and the Managed Deep Agents beta — check your plan in LangSmith Settings.
+
+**Context Hub conflict on `mda deploy`**
+Someone edited `instructions.md` or `skills/` in the LangSmith UI since your last deploy. Answer the CLI prompt, or in CI pass `--context-strategy overwrite` (use your local files) or `--context-strategy keep-hub` (keep the UI edits).
+
+**`sandbox/setup.sh` exited with code 1**
+The managed sandbox image is Debian, so install Python packages with `apt-get install python3-<name>`, not `pip install`. (This project doesn't declare a `sandbox/` by default — only relevant if you add one.)
+
+**Need a different LangSmith region?**
+Set `LANGSMITH_ENDPOINT` in `agents/deep_agent/.env` before your first deploy, e.g. `https://eu.api.smith.langchain.com` — see the region note under Deploy + Govern above for the full table.
 
 **Notebook can't find `utils` / `agents`**
 Each module's setup cell prepends `project_root` (the workshop root) to `sys.path`. If you moved a notebook, update the `Path().resolve().parent` line to point at the workshop root.

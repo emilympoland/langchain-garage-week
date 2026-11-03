@@ -16,7 +16,7 @@ On first launch, the devcontainer:
 3. Configures VS Code to use `.venv/bin/python`.
 4. Generates an ignored `.env` from `.env.example`, overlaying any recognized Codespaces secrets.
 
-Notebooks can read injected Codespaces secrets directly from the environment. The generated `.env` is especially important for Module 3 because the `langgraph` CLI loads it.
+Notebooks can read injected Codespaces secrets directly from the environment. Module 1 and Module 3 read the generated `.env` directly; Module 2's `mda` deploy flow needs its own `agents/deep_agent/.env` instead, which this setup does not generate.
 
 ## Test without secrets
 
@@ -39,7 +39,7 @@ Notebooks can read injected Codespaces secrets directly from the environment. Th
 3. Create a new Codespace from the experimental badge above.
 4. Confirm the generated `.env` still contains each expected variable exactly once and that configured entries are populated.
 5. Run the selected notebooks and confirm model calls work without manually copying keys.
-6. For Module 3, confirm the `langgraph` CLI can start the configured graph using the generated `.env`.
+6. For Module 2, copy the relevant keys into `agents/deep_agent/.env` (the `mda` CLI doesn't read the root `.env`) and confirm `mda build` succeeds.
 
 Never commit real keys. For a one-off test, you can instead add values to the generated `.env`; restart an active notebook kernel after changing them.
 
@@ -49,7 +49,7 @@ Record the following in the draft pull request:
 
 - Codespace creation and setup duration
 - Whether `.venv` was selected automatically
-- Notebook and Module 3 scenarios tested
+- Notebook and Module 2 deploy-flow scenarios tested
 - Any organization, proxy, or permissions issues
 - Relevant setup errors with secret values removed
 
