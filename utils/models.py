@@ -16,10 +16,9 @@ MODEL_SPEC = {"model": "openai:gpt-5.6-luna", "use_responses_api": True}
 API_KEY_ENV = "OPENAI_API_KEY"
 
 # --- OpenAI via the LangSmith LLM Gateway ---
-# Same technique Module 2 §1.4 wires up for the deployable agent in
-# `agents/deep_agent/agent.py` -- applied here, it routes every notebook's
-# model calls through the Gateway too, so workspace policies (PII / secrets /
-# allow-lists / cost caps) are enforced on local runs as well.
+# Routes every notebook's model calls through the Gateway, so workspace
+# policies (PII / secrets / allow-lists / cost caps) are enforced on local
+# runs too.
 # MODEL_SPEC = {
 #     "model": "openai:gpt-5.6-luna",
 #     "base_url": "https://gateway.smith.langchain.com/openai",

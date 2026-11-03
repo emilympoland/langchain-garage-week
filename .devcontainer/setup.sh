@@ -6,8 +6,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 uv sync --frozen
 
-# 2. Generate .env for the langgraph CLI by overlaying any injected Codespaces
-#    secrets onto the committed template. Notebooks read injected env vars directly.
+# 2. Generate .env by overlaying any injected Codespaces secrets onto the
+#    committed template. Notebooks read injected env vars directly.
 python3 - <<'PY'
 import os
 
@@ -15,7 +15,6 @@ keys = [
     "OPENAI_API_KEY",
     "LANGSMITH_API_KEY",
     "LANGSMITH_API_KEY_GATEWAY",
-    "WORKSPACE_ID",
     "TAVILY_API_KEY",
 ]
 try:

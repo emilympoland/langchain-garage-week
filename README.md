@@ -1,8 +1,16 @@
 # Modular Workshops
 
-This repository contains hands-on tutorials for learning LangChain, LangGraph, and Deep Agents.
+This repository is a hands-on, three-module arc: build a Deep Agent, deploy it as a Managed Deep Agent, then observe and iterate on it with LangSmith. By the end you'll have the knowledge to build and deploy your own managed deep agent and keep improving it in production.
 
 This is a condensed version of LangChain Academy, intended to be run in a session with a LangChain engineer. If you're interested in going into more depth, or working through tutorials on your own, check out [LangChain Academy](https://academy.langchain.com/courses/intro-to-langgraph)! LangChain Academy has helpful pre-recorded videos from our LangChain engineers.
+
+## Modules
+
+| Module | Notebook | Covers |
+|---|---|---|
+| 1. Deep Agents | [`modules/01_deep_agents.ipynb`](modules/01_deep_agents.ipynb) | Build an agent by hand with `create_deep_agent()`: custom tools, subagents, memory/backends, middleware, human-in-the-loop, AGENTS.md + skills |
+| 2. Deploy | [`modules/02_deploy.ipynb`](modules/02_deploy.ipynb) | Ship that same agent as a [Managed Deep Agent](https://docs.langchain.com/langsmith/python/managed-deep-agents-overview) (MDA) — `create_deep_agent` → `define_deep_agent`, local dev with `mda dev`, and `mda deploy` to a hosted Agent Server |
+| 3. LangSmith | [`modules/03_langsmith.ipynb`](modules/03_langsmith.ipynb) | Observe and improve the deployed agent: tracing + querying runs, offline evals (final-response + trajectory), online evals, and annotation queues |
 
 ## Prerequisites
 
@@ -24,8 +32,15 @@ cp .env.example .env
 |-----|--------------|---------|
 | `OPENAI_API_KEY` | Modules 1-3 (default model) | <https://platform.openai.com> |
 | `LANGSMITH_API_KEY` | Modules 2 & 3 (recommended for all) | <https://smith.langchain.com> |
-| `LANGSMITH_API_KEY_GATEWAY` / `WORKSPACE_ID` | Module 2 §1 (LangSmith Gateway policies) | same key as `LANGSMITH_API_KEY`; workspace ID from LangSmith Settings → Workspace |
+| `LANGSMITH_API_KEY_GATEWAY` | Optional — LangSmith Gateway model routing in `utils/models.py` (Modules 1 & 3) | same key as `LANGSMITH_API_KEY`, under a non-reserved name |
 | `TAVILY_API_KEY` | Modules 1 & 3 (web search tool) | <https://tavily.com> |
+
+### Getting a LangSmith API key
+
+1. Sign up at <https://smith.langchain.com>, then open **Settings → API Keys**.
+2. Click **Create API Key**, set an expiration, and copy it immediately — LangSmith only shows it once.
+3. **For Modules 1 and 3** (notebook tracing), a **Personal Access Token** is enough — it just inherits your own account's permissions. Put it in the root `.env` as `LANGSMITH_API_KEY`.
+4. **For Module 2** (`mda deploy`), you need a **Service Key** instead — when creating the key, choose **Full Organization** or **Specific Workspaces** rather than a personal scope. Service keys start with `lsv2_sk_...`; a personal token doesn't have deployment permissions and `mda deploy` fails with a 403. Put this one in `agents/deep_agent/.env` as its own `LANGSMITH_API_KEY` (that project reads its own `.env`, not the workshop root's).
 
 ```bash
 # 3. Start Jupyter
@@ -33,43 +48,6 @@ uv run jupyter notebook
 ```
 
 Open whichever module(s) your recipe calls for.
-
-## Switching Models
-
-Module 1 and Module 3 import `model` from `utils/models.py` (Module 2's deployable agent has its own separate config — see below). Pick exactly one `MODEL_SPEC` / `API_KEY_ENV` pair there to swap providers — no notebook edits required.
-
-```python
-# utils/models.py
-
-# OpenAI, direct (default)
-MODEL_SPEC = {"model": "openai:gpt-5.6-luna", "use_responses_api": True}
-API_KEY_ENV = "OPENAI_API_KEY"
-
-# Anthropic
-# MODEL_SPEC = {"model": "anthropic:claude-sonnet-5"}
-# API_KEY_ENV = "ANTHROPIC_API_KEY"
-
-# Azure OpenAI
-# MODEL_SPEC = {"model": "azure_openai:gpt-5.6-terra", "azure_deployment": "gpt-5.6-terra"}
-# API_KEY_ENV = "AZURE_OPENAI_API_KEY"
-
-# AWS Bedrock -- authenticates via the AWS credential chain, not a single key.
-# Also swap the final `model = ...` line for `model = init_chat_model(**MODEL_SPEC)`.
-# MODEL_SPEC = {"model": "bedrock_converse:anthropic.claude-sonnet-4-20250514-v1:0"}
-# API_KEY_ENV = None
-```
-
-`utils/models.py` also ships a commented-out **LangSmith Gateway** block, for routing Module 1 and Module 3's model calls through the gateway too. Module 2 §1.4 walks through the same technique for the deployable agent itself, which has its own model config in `agents/deep_agent/agent.py`.
-
-## Deploy + Govern (Module 2)
-
-Module 2 first creates a workspace-level **LangSmith Gateway** policy (PII / secrets redaction), routes a demo agent through the gateway, then deploys the agent at `agents/deep_agent/` with [Managed Deep Agents](https://docs.langchain.com/langsmith/python/managed-deep-agents-overview) (MDA) via the `mda` CLI — the same Deep Agents harness from Module 1, packaged as a `define_deep_agent` project instead of a hand-built `create_deep_agent` + server.
-
-`agents/deep_agent/` is its own self-contained project (own `pyproject.toml`, own `.env`), so the `mda` toolchain stays isolated from this workshop's notebook environment. Its model config lives directly in `agents/deep_agent/agent.py` — flip on the commented-out Gateway block there and the deployed agent routes through the policy from §1.1, no extra deploy flags needed.
-
-Your `LANGSMITH_API_KEY` must have deployment permissions (use a `lsv2_sk_...` service key). The Gateway block reads `LANGSMITH_API_KEY_GATEWAY` (the same key under a non-reserved name, since `LANGSMITH_API_KEY` is reserved for the deployment's own auth).
-
-Wherever your LangSmith workspace isn't on the GCP US SaaS region (the default for `mda deploy`), set `LANGSMITH_ENDPOINT` to match it in `agents/deep_agent/.env` before your first deploy — see the comment in that file's `.env.example`.
 
 ## Project Structure
 
@@ -81,7 +59,7 @@ modular-workshops/
 ├── utils/
 ├── agents/
 │   ├── research_agent.py           (shared agent factory — Module 1 references, Module 3 imports for eval)
-│   └── deep_agent/                 (deployable + governed agent for Module 2 — its own project, `mda deploy`)
+│   └── deep_agent/                 (deployable agent for Module 2 — its own project, `mda deploy`)
 │       ├── agent.py
 │       ├── instructions.md
 │       ├── memory.py
@@ -92,14 +70,14 @@ modular-workshops/
 ├── images/                         (diagrams used by the notebooks)
 └── modules/
     ├── 01_deep_agents.ipynb        (Module 1)
-    ├── 02_deploy_and_govern.ipynb  (Module 2)
+    ├── 02_deploy.ipynb             (Module 2)
     └── 03_langsmith.ipynb          (Module 3)
 ```
 
 ## Common Issues
 
 **`mda deploy` fails with 403 / permission denied**
-Your API key is a personal token. Generate a service key (`lsv2_sk_...`) in LangSmith settings.
+Your API key is a personal token. Generate a service key (`lsv2_sk_...`) instead — see "Getting a LangSmith API key" under Setup above.
 
 **LangSmith could not identify the API key owner, or 403 on `mda` commands**
 The key in `agents/deep_agent/.env` is wrong or revoked, or it isn't a personal key — `mda` reads `.env` first, so check it there. If you've also exported an old `LANGSMITH_API_KEY` in your shell, other tools may still pick that one up instead.
@@ -114,7 +92,7 @@ Someone edited `instructions.md` or `skills/` in the LangSmith UI since your las
 The managed sandbox image is Debian, so install Python packages with `apt-get install python3-<name>`, not `pip install`. (This project doesn't declare a `sandbox/` by default — only relevant if you add one.)
 
 **Need a different LangSmith region?**
-Set `LANGSMITH_ENDPOINT` in `agents/deep_agent/.env` before your first deploy, e.g. `https://eu.api.smith.langchain.com` — see the region note under Deploy + Govern above for the full table.
+Set `LANGSMITH_ENDPOINT` in `agents/deep_agent/.env` before your first deploy, e.g. `https://eu.api.smith.langchain.com` — see the comment in that file's `.env.example` for the full table.
 
 **Notebook can't find `utils` / `agents`**
 Each module's setup cell prepends `project_root` (the workshop root) to `sys.path`. If you moved a notebook, update the `Path().resolve().parent` line to point at the workshop root.

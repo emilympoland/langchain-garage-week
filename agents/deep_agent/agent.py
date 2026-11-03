@@ -13,35 +13,21 @@ guide (https://docs.langchain.com/langsmith/python/managed-deep-agents-migrate):
   - `skills=["./skills/"]` -> `skills/<name>/SKILL.md` (same files, synced to
     Context Hub)
   - a hand-built `/memories/` `StoreBackend` route -> `memory.py`'s
-    `define_memory(scope="agent")`, mounted at `/memories/agent/`
+    `define_memory(agent=MemoryLayer())`, mounted at `/memories/agent/`
   - a hand-built `backend=CompositeBackend(FilesystemBackend(virtual_mode=True), ...)`
     -> no backend to declare; without a `sandbox/` declaration the managed
     runtime already gives every run the same thread-scoped virtual filesystem
-  - `name` is new and required -- it's also the default deployment name
-    (Module 2 §2.6) and the dashboard identifier
+  - `name` is new and required -- it's also the default deployment name and
+    the dashboard identifier
 
 `model`, `tools`, `subagents`, and `interrupt_on` carry over unchanged.
 """
 
-import os
-
-from langchain.chat_models import init_chat_model
 from managed_deepagents import define_deep_agent
 
 from tools.search import tavily_search
 
-# --- OpenAI, direct (default) ---
 model = "openai:gpt-5.6-luna"
-
-# --- OpenAI via the LangSmith Gateway (Module 2 §1.4) ---
-# Routes every model call through the Gateway so workspace policies
-# (PII / secrets redaction, allow-lists, cost caps) are enforced.
-# model = init_chat_model(
-#     "openai:gpt-5.6-luna",
-#     base_url="https://gateway.smith.langchain.com/openai",
-#     use_responses_api=True,
-#     api_key=os.environ["LANGSMITH_API_KEY_GATEWAY"],
-# )
 
 agent = define_deep_agent(
     name="deep-agent",

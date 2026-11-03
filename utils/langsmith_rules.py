@@ -167,7 +167,10 @@ def create_run_rule(
     response = requests.post(
         f"{client.api_url}/runs/rules", json=body, headers=headers, timeout=30,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        raise requests.HTTPError(f"{e}\nResponse body: {response.text}", response=response) from e
     payload = response.json()
 
     tenant_id = payload["tenant_id"]

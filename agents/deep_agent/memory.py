@@ -8,6 +8,6 @@ equivalent of "hot" memory); `research_notes.md` under `/memories/agent/` is
 read on demand.
 """
 
-from managed_deepagents import define_memory
+from managed_deepagents import MemoryLayer, define_memory
 
-memory = define_memory(scope="agent")
+memory = define_memory(agent=MemoryLayer())

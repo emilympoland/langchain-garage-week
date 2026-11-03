@@ -27,7 +27,6 @@ Notebooks can read injected Codespaces secrets directly from the environment. Mo
    - `OPENAI_API_KEY`
    - `LANGSMITH_API_KEY`
    - `LANGSMITH_API_KEY_GATEWAY`
-   - `WORKSPACE_ID`
    - `TAVILY_API_KEY`
 5. Open a notebook in `modules/` and confirm its imports succeed. Model calls are expected to fail until the required keys are configured.
 6. Run `git status --short` and confirm `.env` is not listed.
